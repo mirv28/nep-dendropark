@@ -1,30 +1,22 @@
 let routeMode = false;
 function toggleRoutePanel() {
   const plantsList = document.getElementById("plants-list");
-
   const routesPanel = document.getElementById("routes-panel");
-
   const plantDetail = document.getElementById("plant-detail");
-
   // включаем маршруты
   if (!routeMode) {
     routeMode = true;
-
     plantsList.style.display = "none";
-
     plantDetail.classList.add("hidden");
-
     routesPanel.classList.remove("hidden");
   }
 
   // выключаем маршруты
   else {
     routeMode = false;
-
     routesPanel.classList.add("hidden");
-
+    plantDetail.classList.add("hidden");
     plantsList.style.display = "grid";
-
     // скрыть маршрут
     if (routeLayer) {
       map.removeLayer(routeLayer);
@@ -33,7 +25,6 @@ function toggleRoutePanel() {
     if (routePointLayer) {
       map.removeLayer(routePointLayer);
     }
-
     // удалить year popup
     if (typeof yearOverlays !== "undefined") {
       yearOverlays.forEach((overlay) => {
@@ -49,6 +40,13 @@ function toggleRoutePanel() {
     }
   }
 }
+document.getElementById("mobileFilterBtn").addEventListener("click", () => {
+  document.getElementById("right-panel").classList.add("mobile-open");
+});
+
+document.getElementById("closeFilters").addEventListener("click", () => {
+  document.getElementById("right-panel").classList.remove("mobile-open");
+});
 var map = new ol.Map({
   target: "map",
   layers: [
@@ -384,6 +382,7 @@ document.getElementById("applyFilter").addEventListener("click", (event) => {
   }
   console.log("Отправляемые фильтры:", filters);
   loadPoints(filters);
+  document.getElementById("right-panel").classList.remove("mobile-open");
 });
 
 document.getElementById("resetFilter").addEventListener("click", (event) => {

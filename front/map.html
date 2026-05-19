@@ -19,11 +19,11 @@
         <a href="map.html">Карта</a>
       </nav>
     </header>
-
-    <div class="layout">
+    <div class="app">
       <!-- LEFT PANEL -->
-      <aside class="plants-panel">
+      <aside id="left-panel" class="plants-panel">
         <h3>Растения</h3>
+        <button id="mobileFilterBtn">Фильтры</button>
         <button id="startRouteBtn" class="two_button">Маршрут — Деревья</button>
         <br></br>
         <div id="plants-list" class="plants-grid"></div>
@@ -51,7 +51,10 @@
       </main>
 
       <!-- RIGHT PANEL -->
-      <aside class="filter-panel">
+      <aside id="right-panel" class="filter-panel">
+        <button id="closeFilters">
+  Закрыть
+</button>
         <h3>Фильтр</h3>
 
         <label>
@@ -97,8 +100,7 @@
         <button id="applyFilter">Применить</button>
         <button id="resetFilter">Сбросить</button>
       </aside>
-    </div>
-
+  </div>
     <script src="https://cdn.jsdelivr.net/npm/ol@v7.3.0/dist/ol.js"></script>
     <script src="js/map.js"></script>
     <script src="js/routes.js"></script>

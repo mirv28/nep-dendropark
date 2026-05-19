@@ -64,3 +64,80 @@
   margin-top: 20px;
   text-align: center;
 }
+
+.app {
+  display: grid;
+  grid-template-columns: 320px 1fr 320px;
+  height: 100vh;
+}
+.route-card-image {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+@media (max-width: 900px) {
+  .app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+  #map {
+    order: 1;
+    height: 45vh;
+    width: 100%;
+  }
+  #left-panel {
+    order: 2;
+    width: 100%;
+    flex: 1;
+    overflow-y: auto;
+  }
+  #right-panel {
+    display: none;
+  }
+
+  #right-panel {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: white;
+    padding: 20px;
+    overflow-y: auto;
+    display: none;
+  }
+  #mobileFilterBtn {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 5000;
+    padding: 14px 20px;
+    border: none;
+    border-radius: 50px;
+    background: white;
+    color: black;
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+  #right-panel.mobile-open {
+    display: block;
+  }
+  .popup {
+    max-width: 180px;
+    font-size: 12px;
+    padding: 8px;
+    border-radius: 10px;
+  }
+  .route-card-image {
+    width: 55%;
+    margin: 0 auto;
+    display: block;
+  }
+}
+#mobileFilterBtn {
+  display: none;
+}
