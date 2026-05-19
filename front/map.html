@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol/ol.css" />
+    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="css/route.css" />
+
+    <title>Непейцевский дендропарк</title>
+  </head>
+
+  <body>
+    <header>
+      <nav>
+        <a href="index.html">Главная</a>
+        <a href="history.html">История</a>
+        <a href="map.html">Карта</a>
+      </nav>
+    </header>
+
+    <div class="layout">
+      <!-- LEFT PANEL -->
+      <aside class="plants-panel">
+        <h3>Растения</h3>
+        <button id="startRouteBtn" class="two_button">Маршрут — Деревья</button>
+        <br></br>
+        <div id="plants-list" class="plants-grid"></div>
+        <div id="plant-detail" class="plant-detail hidden"></div>
+        <div id="routes-panel" class="hidden">
+          <h2 class="route-title">Образовательные маршруты</h2>
+
+          <button class="route-btn" id="oldTreesRouteBtn">
+            Старые деревья
+          </button>
+
+          <button class="route-btn">Восток</button>
+
+          <p class="route-text">Вы также можете создать свой маршрут</p>
+
+          <button class="route-btn">Конструктор</button>
+        </div>
+      </aside>
+
+      <!-- MAP -->
+      <main>
+        <div id="map"></div>
+
+        <div id="popup" class="popup"></div>
+      </main>
+
+      <!-- RIGHT PANEL -->
+      <aside class="filter-panel">
+        <h3>Фильтр</h3>
+
+        <label>
+          Тип растения
+          <select id="typeFilter">
+            <option value="all">Все</option>
+            <option value="Лист">Лиственный</option>
+            <option value="Хвоя">Хвойный</option>
+          </select>
+        </label>
+
+        <label>
+          Страна
+          <select id="countryFilter">
+            <option value="all">Все</option>
+            <option value="Россия">Россия</option>
+            <option value="Китай">Китай</option>
+            <option value="США">США</option>
+          </select>
+        </label>
+
+        <label>
+          Время посадок
+          <select id="yearFilter">
+            <option value="">Все</option>
+            <option value="2000">До 2000</option>
+            <option value="1950">До 1950</option>
+            <option value="1900">До 1900</option>
+          </select>
+        </label>
+
+        <label>
+          Высота
+          <select id="heightFilter">
+            <option value="">Все</option>
+            <option value="0a2">ниже 2 м</option>
+            <option value="2a4">2–5 м</option>
+            <option value="4a10">5–10 м</option>
+            <option value="10a20">10-20 м</option>
+            <option value="20a100">выше 20 м</option>
+          </select>
+        </label>
+        <button id="applyFilter">Применить</button>
+        <button id="resetFilter">Сбросить</button>
+      </aside>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/ol@v7.3.0/dist/ol.js"></script>
+    <script src="js/map.js"></script>
+    <script src="js/routes.js"></script>
+  </body>
+</html>
