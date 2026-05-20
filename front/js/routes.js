@@ -7,6 +7,8 @@ let currentRouteStep = 0;
 let routeLayer;
 let routePointLayer;
 let yearOverlays = [];
+let userMarkerLayer;
+let gpsMode = false;
 
 const routeStartPoint =
   // ВХОД
@@ -88,8 +90,84 @@ function startEducationalRoute() {
 
   renderRoute();
   renderRouteCard();
+  startGPS();
 }
 
+//геолокация
+function startGPS() {
+  navigator.geolocation.watchPosition(
+    (position) => {
+      const lat = position.coords.latitude;
+      const lon = position.coords.longitude;
+
+      updateUserMarker(lat, lon);
+
+      checkRouteDistance(lat, lon);
+    },
+
+    (error) => {
+      console.log(error);
+    },
+
+    {
+      enableHighAccuracy: true,
+    },
+  );
+}
+function updateUserMarker(lat, lon) {
+  if (userMarkerLayer) {
+    map.removeLayer(userMarkerLayer);
+  }
+
+  const feature = new ol.Feature({
+    geometry: new ol.geom.Point(ol.proj.fromLonLat([lon, lat])),
+  });
+
+  feature.setStyle(
+    new ol.style.Style({
+      image: new ol.style.Circle({
+        radius: 8,
+
+        fill: new ol.style.Fill({
+          color: "#2196f3",
+        }),
+
+        stroke: new ol.style.Stroke({
+          color: "white",
+          width: 3,
+        }),
+      }),
+    }),
+  );
+
+  userMarkerLayer = new ol.layer.Vector({
+    source: new ol.source.Vector({
+      features: [feature],
+    }),
+  });
+
+  map.addLayer(userMarkerLayer);
+}
+
+// расчет расстояния
+function getDistanceMeters(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c;
+}
 // ОТРИСОВКА
 function renderRoute() {
   // удалить старые слои
