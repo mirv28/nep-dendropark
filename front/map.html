@@ -28,10 +28,10 @@
         <br></br>
         <div id="plants-list" class="plants-grid"></div>
         <div id="plant-detail" class="plant-detail hidden"></div>
-         <label>
-    <input type="checkbox" id="gpsMode">
+        <label>
+        <input type="checkbox" id="gpsMode">
     GPS-прохождение
-    </label>
+        </label>
         <div id="routes-panel" class="hidden">
           <h2 class="route-title">Образовательные маршруты</h2>
 
@@ -43,14 +43,8 @@
 
           <p class="route-text">Вы также можете создать свой маршрут</p>
 
-          <button class="route-btn">Конструктор</button>
+          <button id="constructorBtn" class="route-btn">Конструктор</button>
         </div>
-        <div class="route-panel">
-  <button id="startBtn">Начало</button>
-  <button id="endBtn">Конец</button>
-  <button id="waypointBtn">Обязательные точки</button>
-  <button id="buildRouteBtn">Построить маршрут</button>
-</div>
       </aside>
 
       <!-- MAP -->
@@ -112,7 +106,8 @@
       </aside>
   </div>
     <script src="https://cdn.jsdelivr.net/npm/ol@v7.3.0/dist/ol.js"></script>
-    <script src="js/map.js"></script>
-    <script src="js/routes.js"></script>
+    <script  src="js/map.js"></script>
+    <script  src="js/routes.js"></script>
+    <script  src="js/constructor.js"></script>
   </body>
 </html>

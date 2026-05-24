@@ -141,3 +141,31 @@
 #mobileFilterBtn {
   display: none;
 }
+
+#routing-panel {
+  position: absolute;
+  top: 100px;
+  left: 20px;
+
+  z-index: 1000;
+
+  background: white;
+
+  padding: 12px;
+
+  border-radius: 12px;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 8px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.active-route-btn {
+  background: #2e7d32;
+  color: white;
+}

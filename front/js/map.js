@@ -200,6 +200,7 @@ function updateMarkers(data) {
           ol.proj.fromLonLat([item.longitude, item.latitude]),
         ),
         point: item,
+        pointId: item.point_id,
       });
 
       // выбор иконки по типу растения
@@ -271,6 +272,8 @@ function addMapObjects() {
   map.addLayer(objectLayer);
 }
 map.on("click", function (evt) {
+  console.log("CLICK");
+
   let feature = map.forEachFeatureAtPixel(evt.pixel, function (feature) {
     return feature;
   });
@@ -280,15 +283,16 @@ map.on("click", function (evt) {
     return;
   }
 
-  // растения
+  console.log(feature.getProperties());
+
+  // popup растения
   const plantPoint = feature.get("point");
 
   if (plantPoint) {
     showPopup(plantPoint, evt.coordinate);
-    return;
   }
 
-  // остальные объекты
+  // popup объектов
   const objectData = feature.get("objectData");
 
   if (objectData) {
@@ -299,6 +303,31 @@ map.on("click", function (evt) {
     `;
 
     popupOverlay.setPosition(evt.coordinate);
+  }
+
+  // выбор точки маршрута
+  const pointId = feature.get("pointId");
+
+  console.log("pointId =", pointId);
+
+  if (pointId === undefined || pointId === null) {
+    return;
+  }
+
+  console.log("MODE =", constructorMode);
+
+  if (constructorMode === "start") {
+    startPoint = pointId;
+
+    console.log("START SET:", startPoint);
+  } else if (constructorMode === "end") {
+    endPoint = pointId;
+
+    console.log("END SET:", endPoint);
+  } else if (constructorMode === "mandatory") {
+    mandatoryPoints.push(pointId);
+
+    console.log("MANDATORY:", pointId);
   }
 });
 
