@@ -1,3 +1,5 @@
+const API_URL = "http://192.168.0.101:5000";
+//const API_URL = "https://large-clocks-pull.loca.lt";
 let routeMode = false;
 function toggleRoutePanel() {
   const plantsList = document.getElementById("plants-list");
@@ -121,7 +123,8 @@ const popupOverlay = new ol.Overlay({
 map.addOverlay(popupOverlay);
 
 function loadPoints(filters = {}) {
-  let url = "http://127.0.0.1:5000/plants";
+  let url = `${API_URL}/plants`;
+  //let url = "http://127.0.0.1:5000/plants";
 
   const params = new URLSearchParams(filters);
 
@@ -311,7 +314,8 @@ ${point.plant_country || ""}
 }
 
 function showPlantInfo(plant) {
-  fetch(`http://127.0.0.1:5000/plants/${plant.id}`)
+  fetch(`${API_URL}/plants/${plant.id}`)
+    //fetch(`http://127.0.0.1:5000/plants/${plant.id}`)
     .then((res) => res.json())
     .then((data) => renderPlantDetail(data));
 }

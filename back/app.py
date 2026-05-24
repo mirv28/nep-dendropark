@@ -188,6 +188,65 @@ def get_route(route_id):
 
     return jsonify(result)
 
+@app.route("/route")
+def get_route_construct():
+
+    start_id = request.args.get("start")
+    end_id = request.args.get("end")
+
+    cur = conn.cursor()
+
+    query = """
+    SELECT ST_AsGeoJSON(
+        ST_LineMerge(
+            ST_Union(p.geom)
+        )
+    )
+    FROM correct_path p
+    JOIN (
+        SELECT edge
+        FROM pgr_dijkstra(
+            '
+            SELECT
+                id,
+                source,
+                target,
+                ST_Length(geom::geography) AS cost
+            FROM correct_path
+            ',
+            (
+                SELECT id
+                FROM vertices
+                ORDER BY geom <-> (
+                    SELECT geom
+                    FROM points
+                    WHERE id = %s
+                )
+                LIMIT 1
+            ),
+            (
+                SELECT id
+                FROM vertices
+                ORDER BY geom <-> (
+                    SELECT geom
+                    FROM points
+                    WHERE id = %s
+                )
+                LIMIT 1
+            ),
+            directed := false
+        )
+    ) route
+    ON p.id = route.edge
+    """
+
+    cur.execute(query, (start_id, end_id))
+
+    route = cur.fetchone()[0]
+
+    cur.close()
+
+    return jsonify(route)
 if __name__ == "__main__":
     #app.run(debug=True)
     app.run(host="0.0.0.0", port=5000, debug=True)

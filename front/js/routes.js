@@ -3,7 +3,6 @@
 // =======================
 
 let currentRouteStep = 0;
-
 let routeLayer;
 let routePointLayer;
 let yearOverlays = [];
@@ -49,7 +48,8 @@ let educationalRoute = [];
 
 // ЗАПУСК МАРШРУТА
 function loadRoute(routeId) {
-  fetch(`http://127.0.0.1:5000/route/${routeId}`)
+  //fetch(`http://127.0.0.1:5000/route/${routeId}`)
+  fetch(`${API_URL}/route/${routeId}`)
     .then((res) => res.json())
 
     .then((data) => {
@@ -95,8 +95,10 @@ function startEducationalRoute() {
 
 //геолокация
 function startGPS() {
+  console.log("GPS START");
   navigator.geolocation.watchPosition(
     (position) => {
+      console.log("POSITION", position);
       const lat = position.coords.latitude;
       const lon = position.coords.longitude;
 
@@ -107,6 +109,7 @@ function startGPS() {
 
     (error) => {
       console.log(error);
+      console.log("GPS ERROR", error);
     },
 
     {
