@@ -62,9 +62,39 @@ var map = new ol.Map({
   }),
 });
 
+let pathsLayer;
 let points = [];
 let markerLayer;
 
+fetch("data/correct_path.geojson")
+  .then((res) => res.json())
+  .then((geojson) => {
+    const features = new ol.format.GeoJSON().readFeatures(geojson, {
+      featureProjection: "EPSG:3857",
+    });
+
+    const source = new ol.source.Vector({
+      features: features,
+    });
+
+    pathsLayer = new ol.layer.Vector({
+      source: source,
+
+      style: new ol.style.Style({
+        stroke: new ol.style.Stroke({
+          color: "#df6676",
+
+          width: 2,
+
+          lineDash: [6, 6],
+        }),
+      }),
+    });
+
+    map.addLayer(pathsLayer);
+    // под маркеры
+    pathsLayer.setZIndex(1);
+  });
 ///enters
 let mapObjects = [
   {
@@ -236,7 +266,7 @@ function updateMarkers(data) {
   });
 
   map.addLayer(markerLayer);
-
+  markerLayer.setZIndex(10);
   console.log("Маркеров:", features.length);
 }
 
@@ -270,6 +300,7 @@ function addMapObjects() {
   });
 
   map.addLayer(objectLayer);
+  objectLayer.setZIndex(10);
 }
 map.on("click", function (evt) {
   console.log("CLICK");
@@ -318,10 +349,30 @@ map.on("click", function (evt) {
 
   if (constructorMode === "start") {
     startPoint = pointId;
+    if (startMarkerLayer) {
+      map.removeLayer(startMarkerLayer);
+    }
+
+    startMarkerLayer = createSelectionMarker(
+      feature.getGeometry().getCoordinates(),
+      "start",
+    );
+
+    map.addLayer(startMarkerLayer);
 
     console.log("START SET:", startPoint);
   } else if (constructorMode === "end") {
     endPoint = pointId;
+    if (endMarkerLayer) {
+      map.removeLayer(endMarkerLayer);
+    }
+
+    endMarkerLayer = createSelectionMarker(
+      feature.getGeometry().getCoordinates(),
+      "end",
+    );
+
+    map.addLayer(endMarkerLayer);
 
     console.log("END SET:", endPoint);
   } else if (constructorMode === "mandatory") {

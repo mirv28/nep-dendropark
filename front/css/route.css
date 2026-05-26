@@ -146,18 +146,12 @@
   position: absolute;
   top: 100px;
   left: 20px;
-
   z-index: 1000;
-
   background: white;
-
   padding: 12px;
-
   border-radius: 12px;
-
   display: flex;
   flex-direction: column;
-
   gap: 8px;
 }
 
@@ -168,4 +162,10 @@
 .active-route-btn {
   background: #2e7d32;
   color: white;
+}
+
+.constructor-active {
+  background: #ffb347;
+  color: white;
+  border: 2px solid #ff8800;
 }

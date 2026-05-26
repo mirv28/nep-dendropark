@@ -286,6 +286,7 @@ function renderRoute() {
   });
 
   map.addLayer(routeLayer);
+  routeLayer.setZIndex(5);
 
   // точки
   routePointLayer = new ol.layer.Vector({
@@ -295,6 +296,7 @@ function renderRoute() {
   });
 
   map.addLayer(routePointLayer);
+  routePointLayer.setZIndex(5);
 }
 
 // -----------------------

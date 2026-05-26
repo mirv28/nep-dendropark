@@ -1,58 +1,172 @@
 let constructorMode = null;
-
 let startPoint = null;
 let endPoint = null;
-
 let mandatoryPoints = [];
-
 let constructorRouteLayer = null;
 let constructorPointLayer = null;
 
-// панель
-const panel = document.createElement("div");
-
-panel.id = "routing-panel";
-
-panel.classList.add("hidden");
-
-panel.innerHTML = `
-    <button id="start-btn">Начало</button>
-    <button id="end-btn">Конец</button>
-    <button id="mandatory-btn">Обязательные</button>
-    <button id="build-btn">Построить</button>
-`;
-
-document.body.appendChild(panel);
 const startBtn = document.getElementById("start-btn");
 const endBtn = document.getElementById("end-btn");
 const mandatoryBtn = document.getElementById("mandatory-btn");
 const buildBtn = document.getElementById("build-btn");
 
-function toggleConstructorPanel() {
-  const panel = document.getElementById("routing-panel");
+function openConstructorPanel() {
+  document.getElementById("routes-panel").classList.add("hidden");
 
-  panel.classList.toggle("hidden");
+  document.getElementById("constructor-panel").classList.remove("hidden");
 }
+function closeConstructorPanel() {
+  document.getElementById("constructor-panel").classList.add("hidden");
+
+  document.getElementById("routes-panel").classList.remove("hidden");
+}
+document
+  .getElementById("backToRoutes")
+  .addEventListener("click", closeConstructorPanel);
 
 // режимы
-startBtn.onclick = () => {
-  constructorMode = "start";
+startBtn.onclick = () => setConstructorMode("start");
 
-  console.log("MODE START");
-};
+endBtn.onclick = () => setConstructorMode("end");
 
-endBtn.onclick = () => {
-  constructorMode = "end";
+mandatoryBtn.onclick = () => setConstructorMode("mandatory");
+function setConstructorMode(mode) {
+  constructorMode = mode;
 
-  console.log("MODE END");
-};
+  startBtn.classList.remove("constructor-active");
+  endBtn.classList.remove("constructor-active");
+  mandatoryBtn.classList.remove("constructor-active");
 
-mandatoryBtn.onclick = () => {
-  constructorMode = "mandatory";
+  if (mode === "start") {
+    startBtn.classList.add("constructor-active");
+  }
 
-  console.log("MODE MANDATORY");
-};
+  if (mode === "end") {
+    endBtn.classList.add("constructor-active");
+  }
 
+  if (mode === "mandatory") {
+    mandatoryBtn.classList.add("constructor-active");
+  }
+
+  console.log("MODE =", mode);
+}
+let filteredPointsLayer = null;
+document
+  .getElementById("highlight-btn")
+  .addEventListener("click", highlightFilteredPoints);
+
+function highlightFilteredPoints() {
+  const filters = {};
+
+  const countryValue = document.getElementById("countryFilter").value;
+
+  const heightValue = document.getElementById("heightFilter").value;
+
+  const typeValue = document.getElementById("typeFilter").value;
+
+  const yearValue = document.getElementById("yearFilter").value;
+
+  if (countryValue && countryValue !== "all") {
+    filters.country = countryValue;
+  }
+
+  if (heightValue) {
+    filters.height = heightValue;
+  }
+
+  if (typeValue && typeValue !== "all") {
+    filters.type = typeValue;
+  }
+
+  if (yearValue) {
+    filters.year = yearValue;
+  }
+
+  let matched = points.filter((item) => {
+    if (filters.country && item.plant_country !== filters.country) {
+      return false;
+    }
+
+    if (filters.type && item.plant_type !== filters.type) {
+      return false;
+    }
+
+    return true;
+  });
+
+  drawFilteredHighlights(matched);
+}
+function drawFilteredHighlights(data) {
+  if (filteredPointsLayer) {
+    map.removeLayer(filteredPointsLayer);
+  }
+
+  const features = data
+    .filter((item) => item.latitude && item.longitude)
+    .map((item) => {
+      const feature = new ol.Feature({
+        geometry: new ol.geom.Point(
+          ol.proj.fromLonLat([item.longitude, item.latitude]),
+        ),
+      });
+
+      feature.setStyle(
+        new ol.style.Style({
+          image: new ol.style.Circle({
+            radius: 14,
+            fill: new ol.style.Fill({
+              color: [255, 255, 0, 0.5],
+            }),
+            stroke: new ol.style.Stroke({
+              color: "orange",
+              width: 1,
+            }),
+            displacement: [0.5, 6],
+          }),
+        }),
+      );
+
+      return feature;
+    });
+
+  filteredPointsLayer = new ol.layer.Vector({
+    source: new ol.source.Vector({
+      features,
+    }),
+  });
+
+  map.addLayer(filteredPointsLayer);
+}
+
+let startMarkerLayer = null;
+let endMarkerLayer = null;
+function createSelectionMarker(coord, type) {
+  let iconPath = "images/icons/pin_A.png";
+  if (type === "end") {
+    iconPath = "images/icons/pin_B.png";
+  }
+
+  const feature = new ol.Feature({
+    geometry: new ol.geom.Point(coord),
+  });
+
+  feature.setStyle(
+    new ol.style.Style({
+      image: new ol.style.Icon({
+        src: iconPath,
+        scale: 1,
+        anchor: [0.5, 1.3],
+      }),
+    }),
+  );
+
+  return new ol.layer.Vector({
+    source: new ol.source.Vector({
+      features: [feature],
+    }),
+  });
+}
 // построение
 document.getElementById("build-btn").onclick = async () => {
   console.log("BUILD");
@@ -142,4 +256,38 @@ function drawRoute(geojson) {
 }
 document
   .getElementById("constructorBtn")
-  .addEventListener("click", toggleConstructorPanel);
+  .addEventListener("click", openConstructorPanel);
+
+document.getElementById("clear-btn").onclick = clearConstructor;
+function clearConstructor() {
+  startPoint = null;
+  endPoint = null;
+
+  mandatoryPoints = [];
+
+  constructorMode = null;
+
+  startBtn.classList.remove("constructor-active");
+  endBtn.classList.remove("constructor-active");
+  mandatoryBtn.classList.remove("constructor-active");
+
+  if (startMarkerLayer) {
+    map.removeLayer(startMarkerLayer);
+    startMarkerLayer = null;
+  }
+
+  if (endMarkerLayer) {
+    map.removeLayer(endMarkerLayer);
+    endMarkerLayer = null;
+  }
+
+  if (constructorRouteLayer) {
+    map.removeLayer(constructorRouteLayer);
+  }
+
+  if (constructorPointLayer) {
+    map.removeLayer(constructorPointLayer);
+  }
+
+  console.log("CONSTRUCTOR CLEARED");
+}
