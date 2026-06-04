@@ -21,7 +21,7 @@ const routeStartPoint =
     status: "active",
 
     card: {
-      image: "images/route/start.jpg",
+      image: "images/plants/enter.jpg",
 
       title: "Образовательный маршрут",
 

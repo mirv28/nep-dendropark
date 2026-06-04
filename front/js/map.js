@@ -1,6 +1,7 @@
 const API_URL = "http://192.168.0.101:5000";
-//const API_URL = "https://large-clocks-pull.loca.lt";
+//const API_URL = "https://afraid-actors-send.loca.lt";
 let routeMode = false;
+let selectedPlantId = null;
 function toggleRoutePanel() {
   const plantsList = document.getElementById("plants-list");
   const routesPanel = document.getElementById("routes-panel");
@@ -225,6 +226,18 @@ function updateMarkers(data) {
 
   data.forEach((item) => {
     if (item.latitude && item.longitude) {
+      const isSelected = item.plant_id === selectedPlantId;
+      // выбор иконки по типу растения
+      let iconPath = "";
+      if (item.plant_type === "Хвоя") {
+        iconPath = isSelected
+          ? "images/icons/pine_focus.png"
+          : "images/icons/pine.png";
+      } else {
+        iconPath = isSelected
+          ? "images/icons/tree_focus.png"
+          : "images/icons/tree.png";
+      }
       let feature = new ol.Feature({
         geometry: new ol.geom.Point(
           ol.proj.fromLonLat([item.longitude, item.latitude]),
@@ -233,20 +246,11 @@ function updateMarkers(data) {
         pointId: item.point_id,
       });
 
-      // выбор иконки по типу растения
-      let iconSrc = "";
-
-      if (item.plant_type === "Хвоя") {
-        iconSrc = "images/icons/pine.png";
-      } else {
-        iconSrc = "images/icons/tree.png";
-      }
-
       // стиль маркера
       feature.setStyle(
         new ol.style.Style({
           image: new ol.style.Icon({
-            src: iconSrc,
+            src: iconPath,
             scale: 1,
             anchor: [0.5, 1],
           }),
@@ -394,6 +398,8 @@ ${point.plant_country || ""}
 }
 
 function showPlantInfo(plant) {
+  selectedPlantId = plant.id;
+  updateMarkers(points);
   fetch(`${API_URL}/plants/${plant.id}`)
     //fetch(`http://127.0.0.1:5000/plants/${plant.id}`)
     .then((res) => res.json())
@@ -429,6 +435,8 @@ function renderPlantDetail(plant) {
 }
 
 function closePlantDetail() {
+  selectedPlantId = null;
+  updateMarkers(points);
   document.getElementById("plant-detail").classList.add("hidden");
   document.getElementById("plants-list").style.display = "grid";
 }

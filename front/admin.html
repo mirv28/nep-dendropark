@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Админ панель</title>
+    <link rel="stylesheet" href="css/admin.css" />
+  </head>
+  <body>
+    <form id="login-form">
+      <h2>Вход</h2>
+
+      <input type="text" id="login" placeholder="Логин" />
+      <input type="password" id="password" placeholder="Пароль" />
+
+      <button type="sumbit" id="loginBtn">Войти</button>
+    </form>
+
+    <div id="admin-panel" style="display: none">
+      <h2>Панель администратора</h2>
+
+      <button id="logoutBtn">Выйти</button>
+
+      <hr />
+
+      <h3>Добавить растение</h3>
+
+      <input id="name_rus" placeholder="Название на русском" />
+      <input id="name_lat" placeholder="Название на латыни" />
+      <input id="country" placeholder="Страна происхождения" />
+      <input id="height" placeholder="Высота максимальная" />
+      <input id="year" placeholder="Год посадки" />
+      <input id="leafType" placeholder="Лист или Хвоя" />
+
+      <textarea id="description" placeholder="Ботаническое описание"></textarea>
+      <textarea id="fact" placeholder="Интересный факт"></textarea>
+      <input id="image" placeholder="Путь к фото" />
+      <button id="addPlantBtn">Добавить растение</button>
+
+      <hr />
+
+      <h3>Список растений</h3>
+
+      <div id="plantsList"></div>
+
+      <hr />
+
+      <h3>Добавление точек</h3>
+
+      <p>Выберите растение и кликайте по карте</p>
+
+      <select id="plantSelect"></select>
+
+      <div id="map"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/ol@v7.3.0/dist/ol.js"></script>
+    <script src="js/admin.js"></script>
+  </body>
+</html>

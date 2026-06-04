@@ -1,9 +1,16 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, session
 from flask_cors import CORS
 import psycopg2
 
 app = Flask(__name__)
-CORS(app)
+
+app.secret_key = "super_secret_key"
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_SECURE"] = False
+CORS(
+    app,
+    supports_credentials=True
+)
 
 conn = psycopg2.connect(
     dbname="nepdendropark",
@@ -196,11 +203,17 @@ def get_route_construct():
 
     cur = conn.cursor()
 
-    query = """
+    # основной маршрут
+    route_query = """
     SELECT ST_AsGeoJSON(
         ST_LineMerge(
             ST_Union(p.geom)
         )
+    ),
+     ST_Length(
+        ST_LineMerge(
+            ST_Union(p.geom)
+        )::geography
     )
     FROM correct_path p
     JOIN (
@@ -240,13 +253,271 @@ def get_route_construct():
     ON p.id = route.edge
     """
 
-    cur.execute(query, (start_id, end_id))
+    cur.execute(route_query, (start_id, end_id))
 
-    route = cur.fetchone()[0]
+    result = cur.fetchone()
+    route = result[0]
+    distance = result[1]
+    walking_speed = 1.4
+
+    duration_seconds = distance / walking_speed
+
+    duration_minutes = round(duration_seconds / 60)
+    # стартовый сегмент
+    start_segment_query = """
+    SELECT ST_AsGeoJSON(
+    ST_MakeLine(
+
+        v.geom,
+
+        ST_ClosestPoint(
+            p.geom,
+            pt.geom
+        )
+    )
+)
+    FROM points pt,
+        correct_path p,
+        vertices v
+    WHERE pt.id = %s
+
+    AND v.id = (
+        SELECT id
+        FROM vertices
+        ORDER BY geom <-> pt.geom
+        LIMIT 1
+    )
+
+    ORDER BY p.geom <-> pt.geom
+    LIMIT 1
+        """
+
+    cur.execute(start_segment_query, (start_id,))
+
+    start_segment = cur.fetchone()[0]
+
+    # конечный сегмент
+    end_segment_query = """
+    SELECT ST_AsGeoJSON(
+    ST_MakeLine(
+
+        ST_ClosestPoint(
+            p.geom,
+            pt.geom
+        ),
+
+        v.geom
+    )
+)
+FROM points pt,
+     correct_path p,
+     vertices v
+WHERE pt.id = %s
+
+AND v.id = (
+    SELECT id
+    FROM vertices
+    ORDER BY geom <-> pt.geom
+    LIMIT 1
+)
+
+ORDER BY p.geom <-> pt.geom
+LIMIT 1
+    """
+
+    cur.execute(end_segment_query, (end_id,))
+
+    end_segment = cur.fetchone()[0]
 
     cur.close()
 
-    return jsonify(route)
+    return jsonify({
+        "route": route,
+        "start_segment": start_segment,
+        "end_segment": end_segment,
+        "distance": round(distance, 1),
+        "duration": duration_minutes
+    })
+
+@app.route("/login", methods=["POST"])
+def login():
+
+    data = request.json
+
+    login = data.get("login")
+    password = data.get("password")
+
+    if login == "admin" and password == "12345":
+        session["admin"] = True
+
+        return jsonify({
+            "success": True
+        })
+
+    return jsonify({
+        "success": False
+    }), 401
+@app.route("/check_auth")
+def check_auth():
+
+    return jsonify({
+        "authorized": session.get("admin", False)
+    })
+@app.route("/logout", methods=["POST"])
+def logout():
+
+    session.clear()
+
+    return jsonify({
+        "success": True
+    })
+@app.route("/admin/plants", methods=["POST"])
+def add_plant():
+
+    if not session.get("admin"):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.json
+
+    cur = conn.cursor()
+    print("Полученные данные:", data)  # Отладка
+    try:
+
+        cur.execute("""
+            INSERT INTO plants
+            (
+                name_rus,
+                name_lat,
+                country,
+                height,
+                year,
+                leaf_type,
+                description,
+                fact,
+                image
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            data["name_rus"],
+            data["name_lat"],
+            data["country"],
+            data["height"],
+            data["year"],
+            data["leaf_type"],
+            data["description"],
+            data["fact"],
+            data["image"]
+        ))
+
+        conn.commit()
+
+        return jsonify({
+            "success": True
+        })
+
+    except Exception as e:
+
+        conn.rollback()
+
+        print(e)
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+    finally:
+        cur.close()
+@app.route("/admin/plants")
+def admin_get_plants():
+
+    if not session.get("admin"):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT id, name_rus
+        FROM plants
+        ORDER BY id
+    """)
+
+    rows = cur.fetchall()
+
+    cur.close()
+
+    return jsonify(rows)
+
+@app.route("/admin/plants/<int:id>", methods=["DELETE"])
+def delete_plant(id):
+
+    if not session.get("admin"):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    cur = conn.cursor()
+
+    cur.execute(
+        "DELETE FROM points WHERE plant_id = %s",
+        (id,)
+    )
+
+    cur.execute(
+        "DELETE FROM plants WHERE id = %s",
+        (id,)
+    )
+
+    conn.commit()
+
+    cur.close()
+
+    return jsonify({
+        "success": True
+    })
+@app.route("/admin/points", methods=["POST"])
+def add_point():
+
+    if not session.get("admin"):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.json
+
+    print(data)
+
+    cur = conn.cursor()
+
+    try:
+
+        cur.execute("""
+            INSERT INTO points
+            (
+                plant_id,
+                latitude,
+                longitude
+            )
+            VALUES (%s, %s, %s)
+        """, (
+            int(data["plant_id"]),
+            float(data["latitude"]),
+            float(data["longitude"])
+        ))
+
+        conn.commit()
+
+        return jsonify({
+            "success": True
+        })
+
+    except Exception as e:
+
+        conn.rollback()
+
+        print(e)
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+    finally:
+        cur.close()
 if __name__ == "__main__":
     #app.run(debug=True)
     app.run(host="0.0.0.0", port=5000, debug=True)

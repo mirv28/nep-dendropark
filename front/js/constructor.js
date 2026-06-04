@@ -182,12 +182,16 @@ document.getElementById("build-btn").onclick = async () => {
     `${API_URL}/route?start=${startPoint}&end=${endPoint}`,
   );
 
-  const geojson = await response.json();
-
-  drawRoute(geojson);
+  const data = await response.json();
+  document.getElementById("route-info").innerHTML = `
+    Длина маршрута: ${Math.round(data.distance)} м
+    <br>
+    Время пешком: ~${data.duration} мин
+  `;
+  drawRoute(data.route, data.start_segment, data.end_segment);
 };
 
-function drawRoute(geojson) {
+function drawRoute(routeGeojson, startGeojson, endGeojson) {
   if (constructorRouteLayer) {
     map.removeLayer(constructorRouteLayer);
   }
@@ -196,30 +200,44 @@ function drawRoute(geojson) {
     map.removeLayer(constructorPointLayer);
   }
 
-  const feature = new ol.format.GeoJSON().readFeature(geojson, {
+  // главный маршрут
+  const mainFeature = new ol.format.GeoJSON().readFeature(routeGeojson, {
     featureProjection: "EPSG:3857",
   });
 
-  // линия
-  feature.setStyle(
-    new ol.style.Style({
-      stroke: new ol.style.Stroke({
-        color: "#ff6600",
-        width: 5,
-      }),
-    }),
-  );
+  // стартовый сегмент
+  const startFeature = new ol.format.GeoJSON().readFeature(startGeojson, {
+    featureProjection: "EPSG:3857",
+  });
 
+  // конечный сегмент
+  const endFeature = new ol.format.GeoJSON().readFeature(endGeojson, {
+    featureProjection: "EPSG:3857",
+  });
+
+  // стиль линии
+  const routeStyle = new ol.style.Style({
+    stroke: new ol.style.Stroke({
+      color: "#ff6600",
+      width: 5,
+    }),
+  });
+
+  mainFeature.setStyle(routeStyle);
+  startFeature.setStyle(routeStyle);
+  endFeature.setStyle(routeStyle);
+
+  // слой маршрута
   constructorRouteLayer = new ol.layer.Vector({
     source: new ol.source.Vector({
-      features: [feature],
+      features: [startFeature, mainFeature, endFeature],
     }),
   });
 
   map.addLayer(constructorRouteLayer);
 
-  // вершины
-  const coords = feature.getGeometry().getCoordinates();
+  // вершины маршрута
+  const coords = mainFeature.getGeometry().getCoordinates();
 
   const pointFeatures = coords.map((coord) => {
     const point = new ol.Feature({
@@ -254,6 +272,7 @@ function drawRoute(geojson) {
 
   map.addLayer(constructorPointLayer);
 }
+
 document
   .getElementById("constructorBtn")
   .addEventListener("click", openConstructorPanel);
