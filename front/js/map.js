@@ -1,17 +1,26 @@
-const API_URL = "http://192.168.0.101:5000";
+const API_URL = "http://192.168.0.102:5000";
+//const API_URL = "http://172.18.0.1:5000";
 //const API_URL = "https://afraid-actors-send.loca.lt";
 let routeMode = false;
 let selectedPlantId = null;
+let mandatoryPoints = [];
+let mandatoryMarkerLayers = [];
 function toggleRoutePanel() {
   const plantsList = document.getElementById("plants-list");
   const routesPanel = document.getElementById("routes-panel");
   const plantDetail = document.getElementById("plant-detail");
+  const switchBtn = document.getElementById("startRouteBtn");
+  const switchText = document.getElementById("switchText");
   // включаем маршруты
   if (!routeMode) {
     routeMode = true;
     plantsList.style.display = "none";
     plantDetail.classList.add("hidden");
     routesPanel.classList.remove("hidden");
+
+    // Меняем внешний вид переключателя
+    switchBtn.classList.add("routes");
+    switchText.textContent = "Маршруты";
   }
 
   // выключаем маршруты
@@ -41,14 +50,24 @@ function toggleRoutePanel() {
     if (markerLayer) {
       markerLayer.setVisible(true);
     }
+    switchBtn.classList.remove("routes");
+    switchText.textContent = "Растения";
   }
 }
-document.getElementById("mobileFilterBtn").addEventListener("click", () => {
-  document.getElementById("right-panel").classList.add("mobile-open");
+const filterBtn = document.getElementById("mobileFilterBtn");
+const filterPanel = document.getElementById("right-panel");
+
+filterBtn.addEventListener("click", () => {
+  if (window.innerWidth <= 768) {
+    filterPanel.classList.add("mobile-open");
+  } else {
+    filterPanel.classList.add("desktop-open");
+  }
 });
 
 document.getElementById("closeFilters").addEventListener("click", () => {
-  document.getElementById("right-panel").classList.remove("mobile-open");
+  filterPanel.classList.remove("mobile-open");
+  filterPanel.classList.remove("desktop-open");
 });
 var map = new ol.Map({
   target: "map",
@@ -58,7 +77,7 @@ var map = new ol.Map({
     }),
   ],
   view: new ol.View({
-    center: ol.proj.fromLonLat([56.0506595555, 54.7896770556]),
+    center: ol.proj.fromLonLat([56.050668, 54.7890858]),
     zoom: 17,
   }),
 });
@@ -67,7 +86,7 @@ let pathsLayer;
 let points = [];
 let markerLayer;
 
-fetch("data/correct_path.geojson")
+fetch("data/path_new.geojson")
   .then((res) => res.json())
   .then((geojson) => {
     const features = new ol.format.GeoJSON().readFeatures(geojson, {
@@ -97,50 +116,14 @@ fetch("data/correct_path.geojson")
     pathsLayer.setZIndex(1);
   });
 ///enters
-let mapObjects = [
-  {
-    type: "entracne",
-    name: "Вход: Уфимское шоссе",
-    lat: 54.787335,
-    lon: 56.050099,
-    icon: "images/icons/enter.png",
-  },
-  {
-    type: "entracne",
-    name: "Вход: Шота Руставели",
-    lat: 54.790634,
-    lon: 56.049408,
-    icon: "images/icons/enter.png",
-  },
-  {
-    type: "entracne",
-    name: "Вход: Даута Юлтыя 8",
-    lat: 54.788672,
-    lon: 56.045219,
-    icon: "images/icons/enter.png",
-  },
-  {
-    type: "entracne",
-    name: "Вход: Даута Юлтыя 4",
-    lat: 54.790641,
-    lon: 56.046581,
-    icon: "images/icons/enter.png",
-  },
-  {
-    type: "playground",
-    name: "Детская площадка",
-    lat: 54.789717,
-    lon: 56.048577,
-    icon: "images/icons/playground.png",
-  },
-  {
-    type: "playground",
-    name: "Детская площадка",
-    lat: 54.789442,
-    lon: 56.048364,
-    icon: "images/icons/playground.png",
-  },
-];
+let mapObjects = [];
+
+fetch(`${API_URL}/map_objects`)
+  .then((res) => res.json())
+  .then((data) => {
+    mapObjects = data;
+    addMapObjects();
+  });
 
 const popupElement = document.getElementById("popup");
 
@@ -282,6 +265,8 @@ function addMapObjects() {
       geometry: new ol.geom.Point(ol.proj.fromLonLat([item.lon, item.lat])),
 
       objectData: item,
+      objectId: item.id,
+      objectType: item.type,
     });
 
     feature.setStyle(
@@ -342,31 +327,43 @@ map.on("click", function (evt) {
 
   // выбор точки маршрута
   const pointId = feature.get("pointId");
+  const objectId = feature.get("objectId");
+  const objectType = feature.get("objectType");
+  let selected = null;
 
-  console.log("pointId =", pointId);
-
-  if (pointId === undefined || pointId === null) {
-    return;
+  if (pointId) {
+    selected = {
+      id: pointId,
+      type: "plant",
+    };
+  } else if (objectId) {
+    selected = {
+      id: objectId,
+      type: objectType,
+    };
   }
 
+  if (!selected) return;
+  console.log("SELECTED =", selected);
   console.log("MODE =", constructorMode);
 
   if (constructorMode === "start") {
-    startPoint = pointId;
+    startPoint = selected;
+    console.log("START SET:", startPoint);
     if (startMarkerLayer) {
       map.removeLayer(startMarkerLayer);
     }
-
     startMarkerLayer = createSelectionMarker(
       feature.getGeometry().getCoordinates(),
       "start",
     );
 
     map.addLayer(startMarkerLayer);
+  }
 
-    console.log("START SET:", startPoint);
-  } else if (constructorMode === "end") {
-    endPoint = pointId;
+  if (constructorMode === "end") {
+    endPoint = selected;
+    console.log("END SET:", endPoint);
     if (endMarkerLayer) {
       map.removeLayer(endMarkerLayer);
     }
@@ -377,12 +374,20 @@ map.on("click", function (evt) {
     );
 
     map.addLayer(endMarkerLayer);
+  }
 
-    console.log("END SET:", endPoint);
-  } else if (constructorMode === "mandatory") {
-    mandatoryPoints.push(pointId);
+  if (constructorMode === "mandatory") {
+    console.log("IN MANDATORY");
+    mandatoryPoints.push(selected);
+    const layer = createSelectionMarker(
+      feature.getGeometry().getCoordinates(),
+      "mandatory",
+    );
 
-    console.log("MANDATORY:", pointId);
+    map.addLayer(layer);
+    mandatoryMarkerLayers.push(layer);
+
+    console.log("MANDATORY:", selected);
   }
 });
 
@@ -483,4 +488,4 @@ document.getElementById("resetFilter").addEventListener("click", (event) => {
 });
 
 loadPoints();
-addMapObjects();
+//addMapObjects();

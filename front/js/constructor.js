@@ -1,7 +1,7 @@
 let constructorMode = null;
 let startPoint = null;
 let endPoint = null;
-let mandatoryPoints = [];
+
 let constructorRouteLayer = null;
 let constructorPointLayer = null;
 
@@ -139,14 +139,18 @@ function drawFilteredHighlights(data) {
   map.addLayer(filteredPointsLayer);
 }
 
+console.log(mandatoryMarkerLayers);
 let startMarkerLayer = null;
 let endMarkerLayer = null;
+
 function createSelectionMarker(coord, type) {
   let iconPath = "images/icons/pin_A.png";
   if (type === "end") {
     iconPath = "images/icons/pin_B.png";
   }
-
+  if (type === "mandatory") {
+    iconPath = "images/icons/check.png";
+  }
   const feature = new ol.Feature({
     geometry: new ol.geom.Point(coord),
   });
@@ -178,8 +182,15 @@ document.getElementById("build-btn").onclick = async () => {
     return;
   }
 
+  // превращаем массив промежуточных точек в строку
+  const mandatory = JSON.stringify(mandatoryPoints);
+
   const response = await fetch(
-    `${API_URL}/route?start=${startPoint}&end=${endPoint}`,
+    `${API_URL}/route?startId=${startPoint.id}` +
+      `&startType=${startPoint.type}` +
+      `&endId=${endPoint.id}` +
+      `&endType=${endPoint.type}` +
+      `&mandatory=${encodeURIComponent(mandatory)}`,
   );
 
   const data = await response.json();
@@ -281,7 +292,11 @@ document.getElementById("clear-btn").onclick = clearConstructor;
 function clearConstructor() {
   startPoint = null;
   endPoint = null;
+  mandatoryMarkerLayers.forEach((layer) => {
+    map.removeLayer(layer);
+  });
 
+  mandatoryMarkerLayers = [];
   mandatoryPoints = [];
 
   constructorMode = null;

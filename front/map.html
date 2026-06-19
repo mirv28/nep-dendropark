@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol/ol.css" />
     <link rel="stylesheet" href="css/styles.css" />
     <link rel="stylesheet" href="css/route.css" />
@@ -23,15 +23,18 @@
     <div class="app">
       <!-- LEFT PANEL -->
       <aside id="left-panel" class="plants-panel">
-        <h3>Растения</h3>
-        <button id="mobileFilterBtn">Фильтры</button>
-        <button id="startRouteBtn" class="two_button">Маршрут — Деревья</button>
-        <br></br>
-        <div id="plants-list" class="plants-grid"></div>
+        <div class="panel-header">
+          <button id="mobileFilterBtn" class="icon-btn">Фильтры</button>
+          <button id="startRouteBtn" class="switch-btn">
+            <span class="switch-thumb"></span>
+            <span id="switchText">Растения</span>
+          </button>
+        </div>
+        <div id="plants-list" class="plants-grid"><h3>Растения</h3></div>
         <div id="plant-detail" class="plant-detail hidden"></div>
         <label>
-        <input type="checkbox" id="gpsMode">
-    GPS-прохождение
+          <input type="checkbox" id="gpsMode" />
+          GPS-прохождение
         </label>
         <div id="routes-panel" class="hidden">
           <h2 class="route-title">Образовательные маршруты</h2>
@@ -46,32 +49,22 @@
           <button id="constructorBtn" class="route-btn">Конструктор</button>
         </div>
         <div id="constructor-panel" class="hidden">
-          <div class="back-btn" id="backToRoutes">
-            ← Назад
-          </div>
+          <div class="back-btn" id="backToRoutes">← Назад</div>
           <div id="routes-panel">
             <h3 class="route-title">Конструктор маршрута</h3>
-            <button id="start-btn" class="route-btn">
-              Выбрать начало
-            </button>
-            <button id="end-btn" class="route-btn">
-              Выбрать конец
-            </button>
+            <button id="start-btn" class="route-btn">Выбрать начало</button>
+            <button id="end-btn" class="route-btn">Выбрать конец</button>
             <button id="mandatory-btn" class="route-btn">
               Обязательные точки
             </button>
             <button id="highlight-btn" class="route-btn">
               Применить фильтры
             </button>
-            <button id="build-btn" class="route-btn">
-              Построить маршрут
-            </button>
-            <button id="clear-btn" class="route-btn">
-              Очистить
-            </button>
+            <button id="build-btn" class="route-btn">Построить маршрут</button>
+            <button id="clear-btn" class="route-btn">Очистить</button>
             <div id="route-info"></div>
           </div>
-</div>
+        </div>
       </aside>
 
       <!-- MAP -->
@@ -83,9 +76,7 @@
 
       <!-- RIGHT PANEL -->
       <aside id="right-panel" class="filter-panel">
-        <button id="closeFilters">
-  Закрыть
-</button>
+        <button id="closeFilters">Закрыть</button>
         <h3>Фильтр</h3>
 
         <label>
@@ -131,10 +122,10 @@
         <button id="applyFilter">Применить</button>
         <button id="resetFilter">Сбросить</button>
       </aside>
-  </div>
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/ol@v7.3.0/dist/ol.js"></script>
-    <script  src="js/map.js"></script>
-    <script  src="js/routes.js"></script>
-    <script  src="js/constructor.js"></script>
+    <script src="js/map.js"></script>
+    <script src="js/routes.js"></script>
+    <script src="js/constructor.js"></script>
   </body>
 </html>

@@ -67,8 +67,9 @@
 
 .app {
   display: grid;
-  grid-template-columns: 320px 1fr 320px;
-  height: 100vh;
+  grid-template-columns: 320px 1fr;
+  height: calc(100vh - 70px);
+  position: relative;
 }
 .route-card-image {
   display: block;
@@ -140,8 +141,19 @@
     display: block;
   }
 }
-#mobileFilterBtn {
-  display: none;
+@media (min-width: 901px) {
+  #mobileFilterBtn {
+    display: block;
+    margin-bottom: 12px;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    background: #366d36;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+  }
 }
 
 #routing-panel {

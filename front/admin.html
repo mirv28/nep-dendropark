@@ -4,53 +4,91 @@
     <meta charset="UTF-8" />
     <title>Админ панель</title>
     <link rel="stylesheet" href="css/admin.css" />
+    <link rel="stylesheet" href="css/styles.css" />
   </head>
   <body>
+    <header id="head-adm">
+      <nav>
+        <a href="index.html">Главная</a>
+        <a href="history.html">История</a>
+        <a href="map.html">Карта</a>
+      </nav>
+    </header>
     <form id="login-form">
       <h2>Вход</h2>
-
       <input type="text" id="login" placeholder="Логин" />
       <input type="password" id="password" placeholder="Пароль" />
-
-      <button type="sumbit" id="loginBtn">Войти</button>
+      <button type="submit" id="loginBtn">Войти</button>
     </form>
 
     <div id="admin-panel" style="display: none">
-      <h2>Панель администратора</h2>
+      <div class="admin-header">
+        <h2>Панель администратора</h2>
+        <a href="map.html" id="logoutBtn">Выйти</a>
+      </div>
 
-      <button id="logoutBtn">Выйти</button>
+      <div class="admin-grid">
+        <!-- ЛЕВАЯ КОЛОНКА: Добавление растения -->
+        <div class="admin-col left-col">
+          <h3>Добавить растение</h3>
+          <div class="form-group">
+            <input id="name_rus" placeholder="Название на русском" />
+            <input id="name_lat" placeholder="Название на латыни" />
+            <input id="country" placeholder="Страна происхождения" />
+            <input id="height" placeholder="Высота максимальная" />
+            <input id="year" placeholder="Год посадки" />
+            <input id="leafType" placeholder="Лист или Хвоя" />
+            <textarea
+              id="description"
+              placeholder="Ботаническое описание"
+              rows="3"
+            ></textarea>
+            <textarea
+              id="fact"
+              placeholder="Интересный факт"
+              rows="2"
+            ></textarea>
+            <input id="image" placeholder="Путь к фото" />
+            <button id="addPlantBtn">Добавить растение</button>
+          </div>
+        </div>
 
-      <hr />
+        <!-- ЦЕНТРАЛЬНАЯ КОЛОНКА: Список растений -->
+        <div class="admin-col center-col">
+          <h3>Список растений</h3>
+          <div id="plantsList" class="plants-list"></div>
+        </div>
 
-      <h3>Добавить растение</h3>
+        <!-- ПРАВАЯ КОЛОНКА: Карта -->
+        <div class="admin-col right-col">
+          <h3>Добавление точек</h3>
 
-      <input id="name_rus" placeholder="Название на русском" />
-      <input id="name_lat" placeholder="Название на латыни" />
-      <input id="country" placeholder="Страна происхождения" />
-      <input id="height" placeholder="Высота максимальная" />
-      <input id="year" placeholder="Год посадки" />
-      <input id="leafType" placeholder="Лист или Хвоя" />
+          <!-- Выбор растения -->
+          <div class="point-controls">
+            <select id="plantSelect" class="plant-select"></select>
+          </div>
 
-      <textarea id="description" placeholder="Ботаническое описание"></textarea>
-      <textarea id="fact" placeholder="Интересный факт"></textarea>
-      <input id="image" placeholder="Путь к фото" />
-      <button id="addPlantBtn">Добавить растение</button>
+          <!-- Поля для ввода координат -->
+          <div class="coords-inputs">
+            <div class="coord-group">
+              <label>Широта (lat)</label>
+              <input type="text" id="latitudeInput" placeholder="54.789..." />
+            </div>
+            <div class="coord-group">
+              <label>Долгота (lng)</label>
+              <input type="text" id="longitudeInput" placeholder="56.050..." />
+            </div>
+            <button id="addPointByCoordsBtn" class="add-point-btn">
+              Добавить точку по координатам
+            </button>
+          </div>
 
-      <hr />
+          <p class="hint">Или кликните по карте, чтобы добавить точку</p>
 
-      <h3>Список растений</h3>
-
-      <div id="plantsList"></div>
-
-      <hr />
-
-      <h3>Добавление точек</h3>
-
-      <p>Выберите растение и кликайте по карте</p>
-
-      <select id="plantSelect"></select>
-
-      <div id="map"></div>
+          <div id="map"></div>
+          <div id="popup" class="popup"></div>
+        </div>
+      </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/ol@v7.3.0/dist/ol.js"></script>

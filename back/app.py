@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request, session
 from flask_cors import CORS
 import psycopg2
+import json
 
 app = Flask(__name__)
 
@@ -133,6 +134,37 @@ def get_plant(plant_id):
         "images": [img[0] for img in images]
     })
 
+@app.route("/map_objects")
+def get_map_objects():
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT
+            id,
+            name,
+            type,
+            icon,
+            ST_Y(geom),
+            ST_X(geom)
+        FROM map_objects
+    """)
+
+    objects = []
+
+    for row in cur.fetchall():
+        objects.append({
+            "id": row[0],
+            "name": row[1],
+            "type": row[2],
+            "icon": row[3],
+            "lat": row[4],
+            "lon": row[5]
+        })
+
+    cur.close()
+
+    return jsonify(objects)
+
 @app.route("/route/<int:route_id>")
 def get_route(route_id):
 
@@ -198,136 +230,205 @@ def get_route(route_id):
 @app.route("/route")
 def get_route_construct():
 
-    start_id = request.args.get("start")
-    end_id = request.args.get("end")
+    start_id = request.args.get("startId")
+    start_type = request.args.get("startType")
+
+    end_id = request.args.get("endId")
+    end_type = request.args.get("endType")
+
+    mandatory = request.args.get("mandatory")
+
+    if mandatory:
+        mandatory_points = json.loads(mandatory)
+    else:
+        mandatory_points = []
+
+    # определяем таблицы объектов
+    start_table = "points" if start_type == "plant" else "map_objects"
+    end_table = "points" if end_type == "plant" else "map_objects"
+
+    start_geom_sql = f"""
+        SELECT geom
+        FROM {start_table}
+        WHERE id = %s
+    """
+
+    end_geom_sql = f"""
+        SELECT geom
+        FROM {end_table}
+        WHERE id = %s
+    """
 
     cur = conn.cursor()
 
+    # -----------------------------------------
+    # формируем список вершин маршрута
+    # -----------------------------------------
+
+    vertex_ids = []
+
+    # стартовая вершина
+    cur.execute(f"""
+        SELECT id
+        FROM vert
+        ORDER BY geom <-> (
+            {start_geom_sql}
+        )
+        LIMIT 1
+    """, (start_id,))
+
+    vertex_ids.append(cur.fetchone()[0])
+
+    # промежуточные точки
+    for point in mandatory_points:
+
+        table = (
+            "points"
+            if point["type"] == "plant"
+            else "map_objects"
+        )
+
+        cur.execute(f"""
+            SELECT id
+            FROM vert
+            ORDER BY geom <-> (
+                SELECT geom
+                FROM {table}
+                WHERE id = %s
+            )
+            LIMIT 1
+        """, (point["id"],))
+
+        row = cur.fetchone()
+
+        if row:
+            vertex_ids.append(row[0])
+
+    # конечная вершина
+    cur.execute(f"""
+        SELECT id
+        FROM vert
+        ORDER BY geom <-> (
+            {end_geom_sql}
+        )
+        LIMIT 1
+    """, (end_id,))
+
+    vertex_ids.append(cur.fetchone()[0])
+
+    # строка вида: 125,83,44,210
+    via_vertices = ",".join(map(str, vertex_ids))
+
+    # -----------------------------------------
     # основной маршрут
-    route_query = """
-    SELECT ST_AsGeoJSON(
-        ST_LineMerge(
-            ST_Union(p.geom)
-        )
-    ),
-     ST_Length(
-        ST_LineMerge(
-            ST_Union(p.geom)
-        )::geography
-    )
-    FROM correct_path p
-    JOIN (
-        SELECT edge
-        FROM pgr_dijkstra(
-            '
-            SELECT
-                id,
-                source,
-                target,
-                ST_Length(geom::geography) AS cost
-            FROM correct_path
-            ',
-            (
-                SELECT id
-                FROM vertices
-                ORDER BY geom <-> (
-                    SELECT geom
-                    FROM points
-                    WHERE id = %s
+    # -----------------------------------------
+
+    route_query = f"""
+        SELECT
+            ST_AsGeoJSON(
+                ST_LineMerge(
+                    ST_Union(p.geom)
                 )
-                LIMIT 1
             ),
-            (
-                SELECT id
-                FROM vertices
-                ORDER BY geom <-> (
-                    SELECT geom
-                    FROM points
-                    WHERE id = %s
-                )
-                LIMIT 1
-            ),
-            directed := false
-        )
-    ) route
-    ON p.id = route.edge
+            ST_Length(
+                ST_LineMerge(
+                    ST_Union(p.geom)
+                )::geography
+            )
+        FROM paths p
+        JOIN (
+            SELECT edge
+            FROM pgr_dijkstraVia(
+                '
+                SELECT
+                    id,
+                    source,
+                    target,
+                    ST_Length(geom::geography) AS cost
+                FROM paths
+                ',
+                ARRAY[{via_vertices}],
+                directed := false
+            )
+            WHERE edge <> -1
+        ) route
+        ON p.id = route.edge
     """
 
-    cur.execute(route_query, (start_id, end_id))
+    cur.execute(route_query)
 
     result = cur.fetchone()
+
     route = result[0]
-    distance = result[1]
+    distance = result[1] or 0
+
     walking_speed = 1.4
-
     duration_seconds = distance / walking_speed
-
     duration_minutes = round(duration_seconds / 60)
+
+    # -----------------------------------------
     # стартовый сегмент
-    start_segment_query = """
-    SELECT ST_AsGeoJSON(
-    ST_MakeLine(
+    # -----------------------------------------
 
-        v.geom,
-
-        ST_ClosestPoint(
-            p.geom,
-            pt.geom
+    start_segment_query = f"""
+        SELECT ST_AsGeoJSON(
+            ST_MakeLine(
+                ST_ClosestPoint(
+                    p.geom,
+                    pt.geom
+                ),
+                v.geom
+            )
         )
-    )
-)
-    FROM points pt,
-        correct_path p,
-        vertices v
-    WHERE pt.id = %s
-
-    AND v.id = (
-        SELECT id
-        FROM vertices
-        ORDER BY geom <-> pt.geom
+        FROM {start_table} pt,
+             paths p,
+             vert v
+        WHERE pt.id = %s
+          AND v.id = (
+                SELECT id
+                FROM vert
+                ORDER BY geom <-> pt.geom
+                LIMIT 1
+          )
+        ORDER BY p.geom <-> pt.geom
         LIMIT 1
-    )
-
-    ORDER BY p.geom <-> pt.geom
-    LIMIT 1
-        """
+    """
 
     cur.execute(start_segment_query, (start_id,))
+    row = cur.fetchone()
+    start_segment = row[0] if row else None
 
-    start_segment = cur.fetchone()[0]
-
+    # -----------------------------------------
     # конечный сегмент
-    end_segment_query = """
-    SELECT ST_AsGeoJSON(
-    ST_MakeLine(
+    # -----------------------------------------
 
-        ST_ClosestPoint(
-            p.geom,
-            pt.geom
-        ),
-
-        v.geom
-    )
-)
-FROM points pt,
-     correct_path p,
-     vertices v
-WHERE pt.id = %s
-
-AND v.id = (
-    SELECT id
-    FROM vertices
-    ORDER BY geom <-> pt.geom
-    LIMIT 1
-)
-
-ORDER BY p.geom <-> pt.geom
-LIMIT 1
+    end_segment_query = f"""
+        SELECT ST_AsGeoJSON(
+            ST_MakeLine(
+                v.geom,
+                ST_ClosestPoint(
+                    p.geom,
+                    pt.geom
+                )
+            )
+        )
+        FROM {end_table} pt,
+             paths p,
+             vert v
+        WHERE pt.id = %s
+          AND v.id = (
+                SELECT id
+                FROM vert
+                ORDER BY geom <-> pt.geom
+                LIMIT 1
+          )
+        ORDER BY p.geom <-> pt.geom
+        LIMIT 1
     """
 
     cur.execute(end_segment_query, (end_id,))
-
-    end_segment = cur.fetchone()[0]
+    row = cur.fetchone()
+    end_segment = row[0] if row else None
 
     cur.close()
 
@@ -515,9 +616,63 @@ def add_point():
         return jsonify({
             "error": str(e)
         }), 500
-
     finally:
         cur.close()
+
+@app.route("/admin/points")
+def get_admin_points():
+
+    if not session.get("admin"):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT
+            pt.id,
+            pt.latitude,
+            pt.longitude,
+            p.name_rus
+        FROM points pt
+        JOIN plants p
+            ON pt.plant_id = p.id
+    """)
+
+    rows = cur.fetchall()
+
+    cur.close()
+
+    result = []
+
+    for row in rows:
+        result.append({
+            "point_id": row[0],
+            "latitude": row[1],
+            "longitude": row[2],
+            "plant_name": row[3]
+        })
+
+    return jsonify(result)
+@app.route("/admin/points/<int:point_id>", methods=["DELETE"])
+def delete_point(point_id):
+
+    if not session.get("admin"):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    cur = conn.cursor()
+
+    cur.execute(
+        "DELETE FROM points WHERE id = %s",
+        (point_id,)
+    )
+
+    conn.commit()
+
+    cur.close()
+
+    return jsonify({
+        "success": True
+    })
 if __name__ == "__main__":
     #app.run(debug=True)
     app.run(host="0.0.0.0", port=5000, debug=True)
