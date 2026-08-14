@@ -1,6 +1,4 @@
-const API_URL = "http://192.168.0.102:5000/";
-//const API_URL = "http:///172.18.0.1:5000";
-//const API_URL = "https://khaki-hoops-sin.loca.lt";
+const API_URL = "http://127.0.0.1:5000";
 console.log("ADMIN JS LOADED");
 
 async function login(event) {
@@ -34,6 +32,127 @@ async function login(event) {
 
 document.getElementById("login-form").addEventListener("submit", login);
 
+// РЕДАКТИРОВАНИЕ РАСТЕНИЯ
+async function editPlant(id) {
+  console.log("Редактирование растения ID:", id);
+
+  try {
+    const response = await fetch(`${API_URL}/admin/plants/${id}`, {
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      alert("Ошибка загрузки данных растения");
+      return;
+    }
+
+    const plant = await response.json();
+    console.log("Данные растения:", plant);
+
+    // Заполняем поля формы
+    document.getElementById("editPlantId").value = plant.id;
+    document.getElementById("name_rus").value = plant.name_rus || "";
+    document.getElementById("name_lat").value = plant.name_lat || "";
+    document.getElementById("country").value = plant.country || "";
+    document.getElementById("height").value = plant.height || "";
+    document.getElementById("year").value = plant.year || "";
+    document.getElementById("leafType").value = plant.leaf_type || "";
+    document.getElementById("description").value = plant.description || "";
+    document.getElementById("fact").value = plant.fact || "";
+    document.getElementById("image").value = plant.image || "";
+
+    // Меняем интерфейс
+    document.getElementById("formTitle").textContent = "Редактировать растение";
+    document.getElementById("addPlantBtn").style.display = "none";
+    document.getElementById("updatePlantBtn").style.display = "block";
+    document.getElementById("cancelEditBtn").style.display = "inline-block";
+
+    // Прокручиваем к форме
+    document.querySelector(".left-col").scrollIntoView({ behavior: "smooth" });
+  } catch (error) {
+    console.error("Ошибка:", error);
+    alert("Ошибка загрузки данных растения");
+  }
+}
+
+// Отмена редактирования
+document.getElementById("cancelEditBtn").addEventListener("click", function () {
+  cancelEdit();
+});
+
+function cancelEdit() {
+  document.getElementById("editPlantId").value = "";
+  document.getElementById("formTitle").textContent = "Добавить растение";
+  document.getElementById("addPlantBtn").style.display = "block";
+  document.getElementById("updatePlantBtn").style.display = "none";
+  document.getElementById("cancelEditBtn").style.display = "none";
+
+  // Очищаем поля
+  document.getElementById("name_rus").value = "";
+  document.getElementById("name_lat").value = "";
+  document.getElementById("country").value = "";
+  document.getElementById("height").value = "";
+  document.getElementById("year").value = "";
+  document.getElementById("leafType").value = "";
+  document.getElementById("description").value = "";
+  document.getElementById("fact").value = "";
+  document.getElementById("image").value = "";
+}
+
+// Обновление растения
+document
+  .getElementById("updatePlantBtn")
+  .addEventListener("click", async function () {
+    const plantId = document.getElementById("editPlantId").value;
+
+    if (!plantId) {
+      alert("Ошибка: ID растения не найден");
+      return;
+    }
+
+    const data = {
+      name_rus: document.getElementById("name_rus").value,
+      name_lat: document.getElementById("name_lat").value,
+      country: document.getElementById("country").value,
+      height: document.getElementById("height").value
+        ? parseInt(document.getElementById("height").value)
+        : null,
+      year: document.getElementById("year").value
+        ? parseInt(document.getElementById("year").value)
+        : null,
+      leaf_type: document.getElementById("leafType").value,
+      description: document.getElementById("description").value,
+      fact: document.getElementById("fact").value,
+      image: document.getElementById("image").value,
+    };
+
+    console.log("Обновление растения ID", plantId, "данные:", data);
+
+    try {
+      const response = await fetch(`${API_URL}/admin/plants/${plantId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(data),
+      });
+
+      if (response.ok) {
+        alert("Растение обновлено!");
+        cancelEdit();
+        loadPlants();
+      } else {
+        const error = await response.json();
+        alert("Ошибка: " + (error.error || "Неизвестная ошибка"));
+      }
+    } catch (error) {
+      console.error("Ошибка:", error);
+      alert("Ошибка при обновлении растения");
+    }
+  });
+
+// ДОБАВЛЕНИЕ РАСТЕНИЯ
 async function addPlant() {
   const data = {
     name_rus: document.getElementById("name_rus").value,
@@ -62,8 +181,7 @@ async function addPlant() {
   });
 
   if (response.ok) {
-    alert("Растение добавлено!");
-    loadPlants();
+    //alert("Растение добавлено!");
     // Очищаем поля формы
     document.getElementById("name_rus").value = "";
     document.getElementById("name_lat").value = "";
@@ -74,13 +192,16 @@ async function addPlant() {
     document.getElementById("description").value = "";
     document.getElementById("fact").value = "";
     document.getElementById("image").value = "";
+    loadPlants();
   } else {
-    alert("Ошибка при добавлении растения");
+    const error = await response.json();
+    alert("Ошибка: " + (error.error || "Неизвестная ошибка"));
   }
 }
 
 document.getElementById("addPlantBtn").addEventListener("click", addPlant);
 
+// ЗАГРУЗКА СПИСКА РАСТЕНИЙ
 async function loadPlants() {
   const response = await fetch(`${API_URL}/admin/plants`, {
     credentials: "include",
@@ -107,12 +228,45 @@ async function loadPlants() {
 
   plants.forEach((plant) => {
     const div = document.createElement("div");
-    div.innerHTML = `
-      ${plant[1]}
-      <button onclick="deletePlant(${plant[0]})">
-        Удалить
-      </button>
-    `;
+
+    // Создаем контейнер для названия и кнопок
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "plant-name";
+    nameSpan.textContent = plant[1];
+
+    const actionsDiv = document.createElement("div");
+    actionsDiv.className = "plant-actions";
+
+    // Кнопка редактирования
+    const editBtn = document.createElement("button");
+    editBtn.className = "edit-btn";
+    editBtn.textContent = "✎";
+    editBtn.title = "Редактировать";
+    editBtn.onclick = function (e) {
+      e.stopPropagation();
+      editPlant(plant[0]);
+    };
+
+    // Кнопка удаления
+    const deleteBtn = document.createElement("button");
+    deleteBtn.textContent = "Удалить";
+    deleteBtn.onclick = function (e) {
+      e.stopPropagation();
+      deletePlant(plant[0]);
+    };
+
+    actionsDiv.appendChild(editBtn);
+    actionsDiv.appendChild(deleteBtn);
+
+    div.appendChild(nameSpan);
+    div.appendChild(actionsDiv);
+
+    // Клик по строке для редактирования
+    div.style.cursor = "pointer";
+    div.onclick = function () {
+      editPlant(plant[0]);
+    };
+
     container.appendChild(div);
 
     const option = document.createElement("option");
@@ -122,6 +276,7 @@ async function loadPlants() {
   });
 }
 
+// УДАЛЕНИЕ РАСТЕНИЯ
 async function deletePlant(id) {
   if (!confirm("Удалить это растение и все его точки?")) return;
 
@@ -131,11 +286,18 @@ async function deletePlant(id) {
   });
 
   if (response.ok) {
+    // Если редактировали это растение - отменяем редактирование
+    if (document.getElementById("editPlantId").value == id) {
+      cancelEdit();
+    }
     loadPlants();
     loadMapPoints();
+  } else {
+    alert("Ошибка при удалении растения");
   }
 }
 
+// КАРТА И ТОЧКИ
 var map = new ol.Map({
   target: "map",
   layers: [
@@ -203,6 +365,8 @@ function drawPoints(data) {
 
   map.addLayer(markerLayer);
 }
+
+// Обработчик клика по маркеру (для удаления)
 map.on("singleclick", function (evt) {
   const feature = map.forEachFeatureAtPixel(evt.pixel, (feature) => feature);
 
@@ -229,6 +393,8 @@ function showDeletePopup(point, coordinate) {
   `;
   popupOverlay.setPosition(coordinate);
 }
+
+// Функция добавления точки
 async function addPoint(plantId, latitude, longitude) {
   console.log("Добавление точки:", { plantId, latitude, longitude });
 
@@ -250,6 +416,7 @@ async function addPoint(plantId, latitude, longitude) {
     console.log("Ответ сервера:", result);
 
     if (response.ok) {
+      alert("Точка добавлена!");
       loadMapPoints();
       document.getElementById("latitudeInput").value = "";
       document.getElementById("longitudeInput").value = "";
@@ -264,8 +431,11 @@ async function addPoint(plantId, latitude, longitude) {
     return false;
   }
 }
+
+// Обработчик клика по карте
 map.on("click", async function (evt) {
   console.log("Клик по карте");
+
   const feature = map.forEachFeatureAtPixel(evt.pixel, (feature) => feature);
   if (feature) {
     console.log("Кликнули по маркеру, пропускаем");
@@ -286,6 +456,7 @@ map.on("click", async function (evt) {
   await addPoint(plantId, coords[1], coords[0]);
 });
 
+// Добавление по координатам из полей ввода
 document
   .getElementById("addPointByCoordsBtn")
   .addEventListener("click", async function () {
@@ -327,6 +498,8 @@ document
 
     await addPoint(plantId, latitude, longitude);
   });
+
+// Удаление точки
 async function deletePoint(pointId) {
   if (!confirm("Удалить эту точку?")) return;
 
@@ -339,7 +512,23 @@ async function deletePoint(pointId) {
     popupOverlay.setPosition(undefined);
     popupElement.style.display = "none";
     loadMapPoints();
+    //alert("Точка удалена!");
   } else {
     alert("Ошибка при удалении точки");
   }
 }
+
+// Выход
+document
+  .getElementById("logoutBtn")
+  .addEventListener("click", async function () {
+    await fetch(`${API_URL}/logout`, {
+      method: "POST",
+      credentials: "include",
+    });
+
+    document.getElementById("admin-panel").style.display = "none";
+    document.getElementById("login-form").style.display = "block";
+    document.getElementById("login").value = "";
+    document.getElementById("password").value = "";
+  });

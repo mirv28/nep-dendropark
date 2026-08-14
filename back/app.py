@@ -362,7 +362,7 @@ def get_route_construct():
     route = result[0]
     distance = result[1] or 0
 
-    walking_speed = 1.4
+    walking_speed = 1.1
     duration_seconds = distance / walking_speed
     duration_minutes = round(duration_seconds / 60)
 
@@ -548,6 +548,96 @@ def admin_get_plants():
 
     return jsonify(rows)
 
+
+
+@app.route("/admin/plants/<int:plant_id>", methods=["GET"])
+def get_plant_for_edit(plant_id):
+    """Получить данные растения для редактирования"""
+    if not session.get("admin"):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    cur = conn.cursor()
+    
+    cur.execute("""
+        SELECT 
+            id, 
+            name_rus, 
+            name_lat, 
+            country, 
+            height, 
+            year, 
+            leaf_type, 
+            description, 
+            fact, 
+            image
+        FROM plants 
+        WHERE id = %s
+    """, (plant_id,))
+    
+    row = cur.fetchone()
+    cur.close()
+    
+    if not row:
+        return jsonify({"error": "Plant not found"}), 404
+    
+    return jsonify({
+        "id": row[0],
+        "name_rus": row[1],
+        "name_lat": row[2],
+        "country": row[3],
+        "height": row[4],
+        "year": row[5],
+        "leaf_type": row[6],
+        "description": row[7],
+        "fact": row[8],
+        "image": row[9]
+    })
+
+@app.route("/admin/plants/<int:plant_id>", methods=["PUT"])
+def update_plant(plant_id):
+    """Обновить данные растения"""
+    if not session.get("admin"):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.json
+    cur = conn.cursor()
+    
+    try:
+        cur.execute("""
+            UPDATE plants 
+            SET 
+                name_rus = %s,
+                name_lat = %s,
+                country = %s,
+                height = %s,
+                year = %s,
+                leaf_type = %s,
+                description = %s,
+                fact = %s,
+                image = %s
+            WHERE id = %s
+        """, (
+            data["name_rus"],
+            data["name_lat"],
+            data["country"],
+            data["height"],
+            data["year"],
+            data["leaf_type"],
+            data["description"],
+            data["fact"],
+            data["image"],
+            plant_id
+        ))
+        
+        conn.commit()
+        cur.close()
+        return jsonify({"success": True})
+        
+    except Exception as e:
+        conn.rollback()
+        cur.close()
+        return jsonify({"error": str(e)}), 500
+    
 @app.route("/admin/plants/<int:id>", methods=["DELETE"])
 def delete_plant(id):
 

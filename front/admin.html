@@ -30,7 +30,18 @@
       <div class="admin-grid">
         <!-- ЛЕВАЯ КОЛОНКА: Добавление растения -->
         <div class="admin-col left-col">
-          <h3>Добавить растение</h3>
+          <h3>
+            <span id="formTitle">Добавить растение</span>
+            <button
+              id="cancelEditBtn"
+              class="cancel-edit-btn"
+              style="display: none"
+            >
+              ✕
+            </button>
+          </h3>
+          <!-- Скрытое поле для ID редактируемого растения -->
+          <input type="hidden" id="editPlantId" value="" />
           <div class="form-group">
             <input id="name_rus" placeholder="Название на русском" />
             <input id="name_lat" placeholder="Название на латыни" />
@@ -50,6 +61,9 @@
             ></textarea>
             <input id="image" placeholder="Путь к фото" />
             <button id="addPlantBtn">Добавить растение</button>
+            <button id="updatePlantBtn" style="display: none">
+              Обновить растение
+            </button>
           </div>
         </div>
 
@@ -79,7 +93,7 @@
               <input type="text" id="longitudeInput" placeholder="56.050..." />
             </div>
             <button id="addPointByCoordsBtn" class="add-point-btn">
-              Добавить точку по координатам
+              Добавить
             </button>
           </div>
 

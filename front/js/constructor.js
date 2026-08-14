@@ -91,7 +91,22 @@ function highlightFilteredPoints() {
     if (filters.type && item.plant_type !== filters.type) {
       return false;
     }
+    // ИСПРАВЛЕНО: используем правильные имена полей
+    if (filters.year && item.plant_year !== parseInt(filters.year)) {
+      return false;
+    }
 
+    if (filters.height) {
+      // Для высоты нужно обрабатывать диапазон, как в app.py
+      const heightParts = filters.height.split("a");
+      if (heightParts.length === 2) {
+        const minHeight = parseInt(heightParts[0]);
+        const maxHeight = parseInt(heightParts[1]);
+        if (item.plant_height < minHeight || item.plant_height >= maxHeight) {
+          return false;
+        }
+      }
+    }
     return true;
   });
 
@@ -322,6 +337,8 @@ function clearConstructor() {
   if (constructorPointLayer) {
     map.removeLayer(constructorPointLayer);
   }
-
+  if (filteredPointsLayer) {
+    map.removeLayer(filteredPointsLayer);
+  }
   console.log("CONSTRUCTOR CLEARED");
 }
