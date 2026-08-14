@@ -1,3 +1,5 @@
+<img width="1920" height="879" alt="chrome_81TrJCQbte" src="https://github.com/user-attachments/assets/57642a9b-5ef7-4910-b68d-bae10d0df42a" />
+
 # nep-dendropark
 
 # nep-dendropark
