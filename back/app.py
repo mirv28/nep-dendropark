@@ -1,11 +1,15 @@
 from flask import Flask, jsonify, request, session
 from flask_cors import CORS
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 import psycopg2
 import json
 
 app = Flask(__name__)
 
-app.secret_key = "super_secret_key"
+app.secret_key = os.getenv("SECRET_KEY")
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = False
 CORS(
@@ -14,11 +18,11 @@ CORS(
 )
 
 conn = psycopg2.connect(
-    dbname="nepdendropark",
-    user="postgres",
-    password="karaganda243",
-    host="localhost",
-    port="5432"
+    dbname=os.getenv("DB_NAME"),
+    user=os.getenv("DB_USER"),
+    password=os.getenv("DB_PASSWORD"),
+    host=os.getenv("DB_HOST"),
+    port=os.getenv("DB_PORT", "5432")
 )
 
 @app.route("/plants")
@@ -448,7 +452,7 @@ def login():
     login = data.get("login")
     password = data.get("password")
 
-    if login == "admin" and password == "12345":
+    if login == os.getenv("ADMIN_LOGIN") and password == os.getenv("ADMIN_PASSWORD"):
         session["admin"] = True
 
         return jsonify({
